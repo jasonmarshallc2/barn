@@ -3,6 +3,9 @@
 #include <Adafruit_BMP280.h>
 #include <LiquidCrystal.h>
 
+int lightPin = 6;
+pinMode (lightPin, OUTPUT);
+
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
 Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
@@ -36,6 +39,8 @@ void setup() {
                   Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 
   bmp_temp->printSensorDetails();
+
+  displayOn();
 }
 
 void loop() {
@@ -58,4 +63,12 @@ lcd.clear();
   lcd.print((temp_event.temperature) * 9/5 + 32);
 
   delay(2000);
+}
+
+void displayOff(){
+  lcd.clear();
+  digitalWrite(lightPin, HIGH);
+}
+void displayOn(){
+  digitalWrite(lightPin, LOW);
 }
