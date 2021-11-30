@@ -4,7 +4,7 @@
 #include <LiquidCrystal.h>
 
 int lightPin = 6;
-pinMode (lightPin, OUTPUT);
+unsigned long delayTime = millis();
 
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
@@ -17,6 +17,7 @@ const int rs = 7, en = 8, d4 = 9, d5 = 11, d6 = 12, d7 = 13;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
+  pinMode (lightPin, OUTPUT);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
@@ -63,6 +64,10 @@ lcd.clear();
   lcd.print((temp_event.temperature) * 9/5 + 32);
 
   delay(2000);
+
+  if ((millis() - delayTime) > 10000){
+    displayOff();
+  }
 }
 
 void displayOff(){
