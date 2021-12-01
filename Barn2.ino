@@ -3,8 +3,11 @@
 #include <Adafruit_BMP280.h>
 #include <LiquidCrystal.h>
 
+int setTempPin = A3;
+int furniceRelay = 5;
 int lightPin = 6;
 unsigned long delayTime = millis();
+int setTemp = 0;
 
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
@@ -18,6 +21,8 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
   pinMode (lightPin, OUTPUT);
+  pinMode (furniceRelay, OUTPUT);
+  pinMode (setTempPin, INPUT);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
@@ -41,6 +46,7 @@ void setup() {
 
   bmp_temp->printSensorDetails();
 
+  furniceOff();
   displayOn();
 }
 
@@ -48,21 +54,29 @@ void loop() {
   sensors_event_t temp_event, pressure_event;
   bmp_temp->getEvent(&temp_event);
   bmp_pressure->getEvent(&pressure_event);
-  
+  double currentTemp = (temp_event.temperature) * 9/5 + 32;
   Serial.print(F("Temperature = "));
-  Serial.print(temp_event.temperature);
-  Serial.println(" *C");
+  Serial.print(currentTemp);
+  Serial.println(" *F");
 
 //  Serial.print(F("Pressure = "));
 //  Serial.print(pressure_event.pressure);
 //  Serial.println(" hPa");
 
   Serial.println();
-lcd.clear();
+  lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Temp ");
-  lcd.print((temp_event.temperature) * 9/5 + 32);
+  lcd.print((currentTemp) * 9/5 + 32);
 
+  int temp analogRead(setTempPin);
+  setTemp = (temp * 0.0390625) + 40; // 1024 / 40; 40 degree total set temp range
+  if ((setTemp - currentTemp) > 2){
+    furniceOn();
+  } else {
+    furniceOff();
+  }
+  
   delay(2000);
 
   if ((millis() - delayTime) > 10000){
@@ -70,6 +84,9 @@ lcd.clear();
   }
 }
 
+void furniceOn(){
+  digitalWrite(furniceRelay, HIGH);
+}
 void displayOff(){
   lcd.clear();
   digitalWrite(lightPin, HIGH);
