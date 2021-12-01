@@ -1,76 +1,79 @@
-//
-//
-
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
+#include <Adafruit_BMP280.h>
+#include <LiquidCrystal.h>
 
-//#define BME_SCK 13
-//#define BME_MISO 12
-//#define BME_MOSI 11
-//#define BME_CS 10
+int lightPin = 6;
+unsigned long delayTime = millis();
 
-#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BMP280 bmp; // use I2C interface
+Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
+Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
 
-Adafruit_BME280 bme; // I2C
-//Adafruit_BME280 bme(BME_CS); // hardware SPI
-//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
-
-unsigned long delayTime;
+// initialize the library by associating any needed LCD interface pin
+// with the arduino pin number it is connected to
+//const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
+const int rs = 7, en = 8, d4 = 9, d5 = 11, d6 = 12, d7 = 13;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-    Serial.begin(9600);
-    while(!Serial);    // time to get serial running
-    Serial.println(F("BME280 test"));
+  pinMode (lightPin, OUTPUT);
+  // set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
 
-    unsigned status;
     
-    // default settings
-    status = bme.begin();  
-    // You can also pass in a Wire library object like &Wire2
-    // status = bme.begin(0x76, &Wire2)
-    if (!status) {
-        Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-        Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
-        Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-        Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-        Serial.print("        ID of 0x60 represents a BME 280.\n");
-        Serial.print("        ID of 0x61 represents a BME 680.\n");
-        while (1) delay(10);
-    }
-    
-    Serial.println("-- Default Test --");
-    delayTime = 1000;
+  Serial.begin(9600);
+  Serial.println(F("BMP280 Sensor event test"));
 
-    Serial.println();
+  //if (!bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID)) {
+  if (!bmp.begin(0x76)) {
+    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
+                      "try a different address!"));
+    while (1) delay(10);
+  }
+
+  /* Default settings from datasheet. */
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+
+  bmp_temp->printSensorDetails();
+
+  displayOn();
 }
 
-void loop() { 
-    printValues();
-    delay(delayTime);
+void loop() {
+  sensors_event_t temp_event, pressure_event;
+  bmp_temp->getEvent(&temp_event);
+  bmp_pressure->getEvent(&pressure_event);
+  
+  Serial.print(F("Temperature = "));
+  Serial.print(temp_event.temperature);
+  Serial.println(" *C");
+
+//  Serial.print(F("Pressure = "));
+//  Serial.print(pressure_event.pressure);
+//  Serial.println(" hPa");
+
+  Serial.println();
+lcd.clear();
+  lcd.setCursor(1, 0);
+  lcd.print("Temp ");
+  lcd.print((temp_event.temperature) * 9/5 + 32);
+
+  delay(2000);
+
+  if ((millis() - delayTime) > 10000){
+    displayOff();
+  }
 }
 
-void printValues() {
-    Serial.print("Temperature = ");
-    Serial.print(bme.readTemperature());
-    Serial.println(" °C");
-    Serial.print(bme.readTemperature() * 9/5 + 32);
-    Serial.println(" °F");
-
-    Serial.print("Pressure = ");
-    Serial.print(bme.readPressure() / 100.0F);
-    Serial.println(" hPa");
-
-    Serial.print("Approx. Altitude = ");
-    Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-    Serial.println(" m");
-    Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084);
-    Serial.println(" f");
-
-    Serial.print("Humidity = ");
-    Serial.print(bme.readHumidity());
-    Serial.println(" %");
-
-    Serial.println();
+void displayOff(){
+  lcd.clear();
+  digitalWrite(lightPin, HIGH);
+}
+void displayOn(){
+  digitalWrite(lightPin, LOW);
 }
