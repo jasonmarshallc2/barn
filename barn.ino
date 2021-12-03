@@ -62,15 +62,18 @@ void loop() {
 //  Serial.print(F("Pressure = "));
 //  Serial.print(pressure_event.pressure);
 //  Serial.println(" hPa");
-
   Serial.println();
+
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Temp ");
   lcd.print((currentTemp) * 9/5 + 32);
 
-  int temp analogRead(setTempPin);
+  int temp = analogRead(setTempPin);
   setTemp = (temp * 0.0390625) + 40; // 1024 / 40; 40 degree total set temp range
+  Serial.println("temp: " + temp);
+  Serial.println("setTemp: " + setTemp);
+  
   if ((setTemp - currentTemp) > 2){
     furniceOn();
   } else {
@@ -86,6 +89,11 @@ void loop() {
 
 void furniceOn(){
   digitalWrite(furniceRelay, HIGH);
+  Serial.println("Furnice ON");
+}
+void furniceOff(){
+  digitalWrite(furniceRelay, LOW);
+  Serial.println("Furnice OFF");
 }
 void displayOff(){
   lcd.clear();
