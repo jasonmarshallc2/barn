@@ -4,10 +4,12 @@
 #include <LiquidCrystal.h>
 
 int setTempPin = A3;
-int furniceRelay = 5;
 int lightPin = 6;
+int furniceRelay = 5;
+int powerSwitch = 4;
 unsigned long delayTime = millis();
 int setTemp = 0;
+bool systemPower = false;
 
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
@@ -23,6 +25,8 @@ void setup() {
   pinMode (lightPin, OUTPUT);
   pinMode (furniceRelay, OUTPUT);
   pinMode (setTempPin, INPUT);
+  pinMode (powerSwitch, INPUT);
+  digitalWrite(powerSwitch, LOW);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
@@ -47,17 +51,34 @@ void setup() {
   bmp_temp->printSensorDetails();
 
   furniceOff();
-  displayOn();
+  displayOff();
 }
 
 void loop() {
+
+if (digitalRead(powerSwitch) == HIGH){
+  delay(300);
+  if (systemPower){
+    systemPower = false;
+    furniceOff();
+    displayOff();
+    Serial.println("power off");
+  } else {
+    systemPower = true;
+    displayOn();
+    Serial.println("Power on");
+  }
+}
+//Serial.print(" systemPower: ");
+//Serial.println(systemPower);
+if (systemPower){
   sensors_event_t temp_event, pressure_event;
   bmp_temp->getEvent(&temp_event);
   bmp_pressure->getEvent(&pressure_event);
   double currentTemp = (temp_event.temperature) * 9/5 + 32;
-  Serial.print(F("Temperature = "));
-  Serial.print(currentTemp);
-  Serial.println(" *F");
+//  Serial.print(F("Temperature = "));
+//  Serial.print(currentTemp);
+//  Serial.println(" *F");
 
 //  Serial.print(F("Pressure = "));
 //  Serial.print(pressure_event.pressure);
@@ -67,12 +88,15 @@ void loop() {
   lcd.clear();
   lcd.setCursor(1, 0);
   lcd.print("Temp ");
-  lcd.print((currentTemp) * 9/5 + 32);
+  lcd.print(currentTemp);
 
   int temp = analogRead(setTempPin);
-  setTemp = (temp * 0.0390625) + 40; // 1024 / 40; 40 degree total set temp range
-  Serial.println("temp: " + temp);
-  Serial.println("setTemp: " + setTemp);
+  setTemp = (temp * 0.0488) + 40; // get about 45 degree total range 50/1024(pot range)
+//  Serial.print("setTemp: ");
+//  Serial.println(setTemp);
+  lcd.setCursor(0, 1);
+  lcd.print("Set Temp ");
+  lcd.print(setTemp);
   
   if ((setTemp - currentTemp) > 2){
     furniceOn();
@@ -80,20 +104,21 @@ void loop() {
     furniceOff();
   }
   
-  delay(2000);
-
-  if ((millis() - delayTime) > 10000){
-    displayOff();
-  }
+  delay(250);
+}
 }
 
 void furniceOn(){
   digitalWrite(furniceRelay, HIGH);
   Serial.println("Furnice ON");
+  lcd.setCursor(14, 0);
+  lcd.print("ON");
 }
 void furniceOff(){
   digitalWrite(furniceRelay, LOW);
   Serial.println("Furnice OFF");
+  lcd.setCursor(14, 0);
+  lcd.print("  ");
 }
 void displayOff(){
   lcd.clear();
