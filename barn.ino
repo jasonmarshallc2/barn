@@ -92,9 +92,6 @@ if (systemPower){
 //  Serial.println();
 
   printCurrentTemp();
-  Serial.print("Humidity = ");
-  Serial.print(bmp.readHumidity());
-  Serial.println(" %");
 
   int temp = analogRead(setTempPin);
 //  setTemp = (temp * 0.0488) + 40; // get about 45 degree total range 50/1024(pot range)
