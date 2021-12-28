@@ -1,3 +1,8 @@
+/*
+ * This is a thermostat for a remote building where the ability to turn off power is required
+ * It is controlled by a main power switch as well as a pot to adjust the set temp.
+ */
+
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
@@ -7,7 +12,7 @@ int setTempPin = A3;
 int lightPin = 6;
 int furniceRelay = 5;
 int powerSwitch = 4;
-unsigned long delayTime = millis();
+//unsigned long delayTime = millis();
 int setTemp = 0;
 bool systemPower = false;
 int currentTemp = 0;
@@ -15,27 +20,22 @@ sensors_event_t temp_event, pressure_event;
   
 Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
-Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
+//Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
 //const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 const int rs = 7, en = 8, d4 = 9, d5 = 11, d6 = 12, d7 = 13;
-
-//const int rs =     7,  8, 9,11,12,13;
-//LiquidCrystal lcd(12, 11, 5, 4, 3, 2); example 
-
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-  pinMode (lightPin, OUTPUT);
+  pinMode (lightPin, OUTPUT); //disables lcd backlight when not in use
   pinMode (furniceRelay, OUTPUT);
-  pinMode (setTempPin, INPUT);
-  pinMode (powerSwitch, INPUT);
+  pinMode (setTempPin, INPUT); //connect to pot that adjusts temp
+  pinMode (powerSwitch, INPUT); //connect to main power switch
   digitalWrite(powerSwitch, LOW);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-
     
   Serial.begin(9600);
   Serial.println(F("BMP280 Sensor event test"));
@@ -61,7 +61,7 @@ void setup() {
 }
 
 void loop() {
-
+// Toogle power switch
 if (digitalRead(powerSwitch) == HIGH){
   delay(300);
   if (systemPower){
@@ -77,27 +77,16 @@ if (digitalRead(powerSwitch) == HIGH){
 }
 
 if (systemPower){
-//  sensors_event_t temp_event, pressure_event;
   bmp_temp->getEvent(&temp_event);
-//  bmp_pressure->getEvent(&pressure_event);
-//  double currentTemp = (temp_event.temperature) * 9/5 + 32;
   currentTemp = (temp_event.temperature) * 9/5 + 32;
 //  Serial.print(F("Temperature = "));
 //  Serial.print(currentTemp);
 //  Serial.println(" *F");
-
-//  Serial.print(F("Pressure = "));
-//  Serial.print(pressure_event.pressure);
-//  Serial.println(" hPa");
-//  Serial.println();
-
   printCurrentTemp();
 
   int temp = analogRead(setTempPin);
 //  setTemp = (temp * 0.0488) + 40; // get about 45 degree total range 50/1024(pot range)
   setTemp = (temp * 0.0588) + 40; // get about 45 degree total range 60/1024(pot range)
-//  Serial.print("setTemp: ");
-//  Serial.println(setTemp);
   lcd.setCursor(1, 1);
   lcd.print("Set  ");
   lcd.print(setTemp);
@@ -115,7 +104,6 @@ if (systemPower){
 void furniceOn(){
   digitalWrite(furniceRelay, HIGH);
   Serial.println("Furnice ON");
-//  lcd.clear();
   printCurrentTemp();
   lcd.setCursor(14, 0);
   lcd.print("ON");
@@ -126,7 +114,7 @@ void furniceOff(){
   lcd.setCursor(14, 0);
   lcd.print("  ");
 }
-void displayOff(){
+void displayOff(){ // The display I'm using does not allow a shutoff mode, so just clear it
   lcd.clear();
   digitalWrite(lightPin, HIGH);
   lcd.setCursor(0, 0);
